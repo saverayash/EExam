@@ -1,0 +1,24 @@
+{
+  "type": "commonjs",
+  "name": "nodejs",
+  "version": "1.0.0",
+  "description": "this is my first package ",
+  "scripts": {
+    "start": "nodemon Main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "yash savera",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "mongoose": "^8.6.1",
+    "morgan": "^1.10.0",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
