@@ -12,6 +12,7 @@ function Given_Exam() {
     const [responses, setResponses] = useState(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [marks, setMarks] = useState({});
+     const [isModalVisible, setIsModalVisible] = useState(false);
     const navigate=useNavigate();
    
 
@@ -73,21 +74,21 @@ function Given_Exam() {
         }));
     };
     
-    const handleMCQResponseChange = (questionId, option) => {
-        setResponses((prev) => {
-            const selectedOptions = prev[questionId] || [];
-            if (selectedOptions.includes(option)) {
-                return {
-                    ...prev,
-                    [questionId]: selectedOptions.filter((o) => o !== option)
-                };
-            } else {
-                return {
-                    ...prev,
-                    [questionId]: [...selectedOptions, option]
-                };
-            }
-        });
+    const InstructionModal = ({ show, onClose, instruction }) => {
+        //console.log("Is Modal Visible: ", show); // Debugging log
+        
+        if (!show) return null;
+    
+        return (
+            <div style={styles.modalBackground}>
+                <div style={styles.modal}>
+                    <h3 style={styles.heading}>{exam?.Title}</h3>
+                    <p style={styles.paragraph}>Total Marks: {exam?.Total_Marks}</p>
+                    <p style={styles.paragraph}>Instructions: {exam?.Instruction}</p>
+                    <button onClick={onClose}>Close</button>
+                </div>
+            </div>
+        );
     };
     
     const handleNext = () => {
@@ -112,7 +113,13 @@ function Given_Exam() {
         if (score < 0) return '#F44336';        // Negative marks - Red
         return '#4CAF50';                       // Default (0 or no marks) - Green
     };
-
+    const handleInstructionClick = () => {
+        setIsModalVisible(true);
+      };
+    
+      const handleModalClose = () => {
+        setIsModalVisible(false);
+      };
     if (loading) return <h3>Loading...</h3>;
     if (error) return <h3>{error}</h3>;
 
@@ -137,7 +144,18 @@ function Given_Exam() {
                                 </button>
                             ))}
                         </div>
-
+                        <div style={styles.Countdown}>
+  <strong></strong>{" "}
+  <button onClick={handleInstructionClick} style={styles.link}>
+    Instructions
+  </button>
+  
+  <InstructionModal
+    show={isModalVisible}
+    onClose={handleModalClose}
+    instruction={exam?.Instruction}
+  />
+</div>
                     </div>
                     <div style={styles.questionContainer}>
                         {currentQuestion ? (
@@ -340,11 +358,39 @@ if (selectedAnswer) {
     );
 }
 const styles = {
+    modalBackground: {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(69, 66, 66, 0.7)',
+        backdropFilter: 'blur(10px)',  // Apply blur to the background
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modal: {
+        backgroundColor: 'white',
+        padding: '30px',
+        borderRadius: '10px',
+        textAlign: 'center',
+        zIndex: 10,  // Ensure it appears above the blurred background
+        maxWidth: '70%', // Restrict width for better appearance
+        position: 'relative', // Ensure it stays within the modalBackground
+    },
     container: { display: 'flex', height: '100vh' },
     sidebar: { width: '20%', background: '#f4f4f4', padding: '10px' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' },
     questionContainer: { flex: 1, padding: '20px' },
     questionButton: { padding: '10px', cursor: 'pointer' },
+    link: {
+        borderColor:'white',
+        fontSize:'1rem',
+        cursor: 'pointer', // Ensures the element shows a clickable cursor
+        color: 'black', // Gives it a clickable link color
+     // Optionally adds underline for links
+      },
     popupOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     popupInner: { backgroundColor: '#fff', padding: '30px', borderRadius: '10px' },
     popupButton: { marginTop: '20px' },
@@ -471,6 +517,7 @@ const styles = {
        width:'320px',
        textAlign:'center',
     },
+   
     isselectediscorrectbox: { fontSize: '14px', color: 'black', marginTop: '5px' },
      
       

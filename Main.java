@@ -3,92 +3,73 @@ import java.util.*;
 
 public class Main {
     private static final FastIO sc = new FastIO();
-
+     
     public static void main(String[] args) {
         int t = sc.nextInt();
+
+      
         while (t-- > 0) {
             solve();
         }
     }
 
     static void solve() {
-       long a=0L;
-       long b=sc.nextLong();
-       long c=sc.nextLong();
-       long d=sc.nextLong();
-       for(int i=62;i>=0;i--)
-       {
-            long x=(b>>i)%2;
-            long y=(c>>i)%2;
-            long z=(d>>i)%2;
-            if(z==1L)
-            {
-                if(y==1L)
-                {
-                    if(x==0L)
-                    {
-                System.out.println("-1");
-                return;
-                    }
-                
-                }
-                else
-                a+=(1L<<i);
+      int n=sc.nextInt();
+      int m=sc.nextInt();
+      String s=sc.next();
+      int i=0,j=0;
+      long [][] a=new long [n][m];
+      long [] r=new long [n];
+      long [] c=new long [m];
+      for(i=0;i<n;i++)
+      {
+             for(j=0;j<m;j++)
+             {
+                long val=sc.nextLong();
+                a[i][j]=val;
+                r[i]+=val;
+                c[j]+=val;
+             }
+      }
+      i=0;j=0;
+      while(true)
+      {
+           if(i+j>=s.length())
+           break;
+           if(s.charAt(i+j)=='D')
+           {
+                 a[i][j]=-r[i];
+                 c[j]+=a[i][j];
+                 i++;
+           }
+           else
+           {
+                 a[i][j]=-c[j];
+                 r[i]+=a[i][j];
+                 j++;
+           }
+      }
+      a[n-1][m-1]=-r[n-1];
+      StringBuffer str=new StringBuffer();
+      for(i=0;i<n;i++)
+      {
+          for(j=0;j<m;j++)
+          str.append(a[i][j]+" ");
+          if(i!=n-1)
+          str.append('\n');
+      }
+      System.out.println(str);
+    }
+   
+   static int gcd(int a,int b)
+   {
+           if(b>a)
+           return gcd(b,a);
 
-            }
-            else
-            {
-                   if(y==0L)
-                   {
-                    if(x==1L)
-                    {
-                        System.out.println("-1");
-                        return;
-                            }
-                   }
-                   else
-                   a+=(1L<<i);
-            }
-           
-       }
-       System.out.println(a);
-    }
-    static long fun(long n)
-    {
-          long s=1L,e=5*(long)Math.pow(10,9),m=0L,ans=0L;
-          while(s<=e)
-          {
-            m=s+(e-s)/2;
-            if(m*m<=n)
-            {
-                ans=m;
-                s=m+1;
-            }
-            else
-            e=m-1;
-          }
-          return ans;
-    }
-    static int bfs(int idx,int a[],boolean vi[],ArrayList<ArrayList<Integer>> adj)
-    {
-        if(vi[idx])
-        return 0;
-        vi[idx]=true;
-        for(int ele:adj.get(idx))
-        {
-            if(vi[ele])
-            continue;
-            a[idx]+=bfs(ele,a,vi,adj);
-        }
-        return a[idx];
-    }
-    static long ceil(long a,long b)
-    {
-        if(a%b==0)
-        return a/b;
-
-        return a/b+1;
-    }
+           if(b==0)
+           return a;
+           return gcd(b,a%b);
+   }
     static class Pair
     {
         int x;
@@ -98,48 +79,63 @@ public class Main {
             this.x=x;
             this.y=y;
         }
+        @Override
+        public boolean equals(Object o) {
+            // Check if the object is of the same type
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Pair pair = (Pair) o;
+            return (x == pair.x && y == pair.y) || (x == pair.y && y == pair.x);  // Ensure pairs are equal regardless of order
+        }
+    
+        @Override
+        public int hashCode() {
+            return Objects.hash(Math.min(x, y), Math.max(x, y));  // Generate hash code based on ordered pair values
+        }
     }
-}
-
-class FastIO extends PrintWriter {
-    private BufferedReader br;
-    private StringTokenizer st;
-
-    public FastIO() {
-        this(System.in, System.out);
+   
+    static long modInverse(long x, long m) {
+        return power(x, m - 2, m);  
     }
-
-    public FastIO(InputStream in, OutputStream out) {
-        super(out);
-        br = new BufferedReader(new InputStreamReader(in));
+    static long power(long x, long y, long m) {
+        long res = 1;
+        x = x % m;
+        while (y > 0) {
+            if ((y & 1) == 1) {
+                res = (res * x) % m;
+            }
+            y = y >> 1;
+            x = (x * x) % m;
+        }
+        return res;
     }
+        
 
-    public FastIO(String input, String output) throws FileNotFoundException {
-        super(output);
-        br = new BufferedReader(new FileReader(input));
-    }
+    static class FastIO {
+        BufferedReader br;
+        StringTokenizer st;
 
-    public String next() {
-        try {
+        FastIO() {
+            br = new BufferedReader(new InputStreamReader(System.in));
+        }
+
+        String next() {
             while (st == null || !st.hasMoreTokens()) {
-                st = new StringTokenizer(br.readLine());
+                try {
+                    st = new StringTokenizer(br.readLine());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             return st.nextToken();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return null;
-    }
 
-    public int nextInt() {
-        return Integer.parseInt(next());
-    }
+        int nextInt() {
+            return Integer.parseInt(next());
+        }
 
-    public double nextDouble() {
-        return Double.parseDouble(next());
-    }
-
-    public long nextLong() {
-        return Long.parseLong(next());
+        long nextLong() {
+            return Long.parseLong(next());
+        }
     }
 }

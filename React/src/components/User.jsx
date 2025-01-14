@@ -1,30 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import Sidebar_User from './Sidebar_User.jsx';
 
 function User() {
+    const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
-    
-    const handleClick1 = () => {
-        navigate('/ask_doubt');
-    };
-    const handleClick2 = () => {
-        navigate('/privious_exams');
-    };
-    const handleClick3 = () => {
-        navigate('/exams');
-    };
-    const handleClick4 = () => {
-        navigate('/change_password');
-    };
+
+    useEffect(() => {
+        const token = localStorage.getItem('jwtToken');
+        if (token) {
+            const decoded = jwtDecode(token);
+            setUserData(decoded);
+        }
+    }, []);
 
     return (
-        <>
-            <button onClick={handleClick1}>Ask Doubt</button>
-            <button onClick={handleClick2}>Privious Exmas</button>
-            <button onClick={handleClick3}>Exams</button>
-            <button onClick={handleClick4}>Change Password</button>
-        </>
+        <div style={styles.container}>
+            <Sidebar_User />
+            <div style={styles.mainContent}>
+                {userData ? (
+                    <p><b>Welcome Back {userData.Mail_Id}</b></p>
+                ) : (
+                    <p>No user data found</p>
+                )}
+            </div>
+        </div>
     );
 }
+
+const styles = {
+    container: {
+        display: 'flex',
+        height: '100vh',
+    },
+    mainContent: {
+        flex: 1,
+        padding: '20px',
+        overflow: 'auto',
+    },
+};
 
 export default User;

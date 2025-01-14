@@ -68,6 +68,7 @@ const Sidebar_Instructor = () => {
             {isSidebarOpen && (
                 <ul style={styles.menu}>
                     <li onClick={() => handleNavigation('/add_exam_paper')} style={styles.menuItem}>Add Exam Paper</li>
+                    <li onClick={()=>handleNavigation('/privious_exams_instructor')} style={styles.menuItem}>See Exam Paper</li>
                     <li onClick={() => handleNavigation('/check_exam_paper')} style={styles.menuItem}>Check Exam Paper</li>
                     <li onClick={() => handleNavigation('/doubt_instructor')} style={styles.menuItem}>Answer Doubts</li>
                     <li onClick={() => handleNavigation('/change_password')} style={styles.menuItem}>Change Password</li>

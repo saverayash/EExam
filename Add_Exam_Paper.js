@@ -3,38 +3,8 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const router1 = express.Router();
 
-// Define Paper Schema
-/*const Schema_Paper = new Schema({
-    Title: String,
-    Total_Marks: Number,
-    Instruction: String,
-    Start_Time: { type: Date, required: true },
-    End_Time: { type: Date, required: true },
-    Time: { type: Number, required: true },
-    Questions: [
-        {
-            questionType: String,
-            questionText: String,
-            questionMarks: Number,
-            correctAnswer: [Schema.Types.Mixed],
-            range: {
-                type: [Number],
-                validate: {
-                    validator: function (v) {
-                        return v == null || v.length === 2;
-                    },
-                    message: 'Range must be an array with two numbers'
-                }
-            },
-            options: [String],
-            isSCQ: Boolean,
-            negativeMarking: Boolean,
-            negativePercentage: Number
-        }
-    ]
-});*/
+const {Instructor} =require('./login');
 
-// Define Answer_Sheet Schema
 const Schema_Answer_Sheet = new Schema({
     Checked:Boolean,
    // Paper_Id: String,
@@ -82,7 +52,11 @@ const Answer_Sheet = mongoose.model('Answer_Sheet', Schema_Answer_Sheet, 'Answer
 // Route to create a new Paper and corresponding Answer_Sheet
 router1.post('/', async (req, res) => {
     try {
-        const { title, totalMarks, instructions, startTime, endTime, duration, questions } = req.body;
+        
+        
+        const { examData, Mail_Id } = req.body;
+        const { title, totalMarks, instructions, startTime, endTime, duration, questions } = examData;
+        //const {Mail_Id}=req.body.Mail_Id;
 
         // Create new Paper document
       /*  const newPaper = new Paper({
@@ -97,11 +71,11 @@ router1.post('/', async (req, res) => {
 
         // Save Paper to database
         const savedPaper = await newPaper.save();*/
-
+        const inst=await Instructor.findOne({Mail_Id:Mail_Id});
         // Create corresponding Answer_Sheet with Paper_Id referencing the savedPaper's _id
         const newAnswerSheet = new Answer_Sheet({
             Checked:false,
-           // Paper_Id: savedPaper._id.toString(),
+           
             Title: title,
             Total_Marks: totalMarks,
             Instruction: instructions,
@@ -110,12 +84,25 @@ router1.post('/', async (req, res) => {
             Time: duration,
             Questions: questions,   // Copying questions from Paper
             Responses: [] ,
-            Mark :Number,          // Initialize with an empty Responses array
+          
         });
 
-        // Save Answer_Sheet to database
+        
         await newAnswerSheet.save();
-
+      
+       console.log(inst);
+        const updateExamSet = await Instructor.findOneAndUpdate(
+            { Mail_Id: Mail_Id }, 
+            { 
+                $push: { 
+                    Exam_Set: newAnswerSheet._id ,
+                } ,
+            },
+            { new: true }
+        );
+          if(!updateExamSet)
+            return res.status(400).json({ message: 'Failed to update the instructor with the new answer sheet.' });
+        else
         res.status(201).json({ message: 'Exam paper and corresponding answer sheet created successfully!' });
     } catch (error) {
         console.error('Error creating exam paper or answer sheet:', error);
@@ -125,6 +112,5 @@ router1.post('/', async (req, res) => {
 
 module.exports = {
     router1,
-   // Paper,
-    Answer_Sheet
+    Answer_Sheet,
 };

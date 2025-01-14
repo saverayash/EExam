@@ -66,6 +66,30 @@ router.post('/:id', async (req, res) => {
     }
     
 });
+router.post('/see/:id', async (req, res) => {
+    const { id } = req.params;
+    const { Mail_Id } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid exam ID' });
+    }
+
+    try {
+        const exam = await Answer_Sheet.findById(id);  // Get the exam by ID
+    
+        if (exam) {
+           
+    
+            res.json({ exam: exam, answers:null });
+        } else {
+            res.status(404).json({ message: 'Exam not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching exam:', error);
+        res.status(500).json({ message: 'Failed to fetch exam', error: error.message });
+    }
+    
+});
 
 module.exports = router;
 

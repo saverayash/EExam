@@ -2,31 +2,35 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const jwt=require('jsonwebtoken');
 
-// MongoDB Schema Definitions
+const SECRET_KEY="I_AM_learning_JWT";
+
+
 const Schema_User = new Schema({
-    Id: Number,
+    Id: String,
     Password: String,
     Mail_Id: String,
     Education: String,
+    Exams_Given:[],
+    Doubts:[],
 });
 
 const Schema_Admin = new Schema({
-    Id: Number,
+    Id: String,
     Password: String,
     Mail_Id: String,
     Experience: String,
 });
 
 const Schema_Instructor = new Schema({
-    Id: Number,
+    Id: String,
     Password: String,
     Mail_Id: String,
     Experience: String,
     Exam_Set: Array,
+    Doubts:[],
 });
-
-
 
 const Student = mongoose.model('Student', Schema_User, 'User');
 const Admin = mongoose.model('Admin', Schema_Admin, 'Admin');
@@ -35,7 +39,7 @@ const Instructor = mongoose.model('Instructor', Schema_Instructor, 'Instructor')
 // Database connection
 main().catch(err => console.log(err));
 async function main() {
-    await mongoose.connect("mongodb+srv://yashsavera762:QgYYxYDUN4oCMIot@yashsv.fwwy2.mongodb.net/MyExam");
+    await mongoose.connect("mongodb://localhost:27017/yashsavera762");
     console.log('Database Connected');
 }
 
@@ -43,8 +47,7 @@ async function main() {
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
-// Secret key for JWT
-const SECRET_KEY = 'your_secret_key'; // Replace this with a real secret key
+
 
 // POST login route
 // POST login route
@@ -58,19 +61,24 @@ router.post('/login', async (req, res) => {
         const user = await Student.findOne({ Id: id, Password: password });
         if (user) {
             console.log("User login");
-            return res.json({ role: 'user' }); // Respond with JSON indicating the role
+            const token = jwt.sign({ role: 'user', Mail_Id: user.Mail_Id ,Id:user.Id}, SECRET_KEY, { expiresIn: '1h' });
+            return res.json({ token, role: 'user' ,Id:id}); 
         }
 
         // Check if user is an admin
         const admin = await Admin.findOne({ Id: id, Password: password });
         if (admin) {
-            return res.json({ role: 'admin' }); // Respond with JSON indicating the role
+            console.log("Admin login");
+            const token = jwt.sign({ role: 'Admin', Mail_Id: admin.Mail_Id,Id:id }, SECRET_KEY, { expiresIn: '1h' });
+            return res.json({ token, role: 'Admin',Id:id }); 
         }
 
         // Check if user is an instructor
         const instructor = await Instructor.findOne({ Id: id, Password: password });
         if (instructor) {
-            return res.json({ role: 'instructor' }); // Respond with JSON indicating the role
+            console.log("Instructor login");
+            const token = jwt.sign({ role: 'Instructor', Mail_Id: instructor.Mail_Id,Id:id }, SECRET_KEY, { expiresIn: '1h' });
+            return res.json({ token, role: 'Instructor' ,Id:id}); 
         }
 
         // If no user found
@@ -118,6 +126,8 @@ router.post('/signup', async (req, res) => {
             Password: password,
             Mail_Id: mail_id,
             Education: education,
+            Exams_Given:[],
+            Doubts:[],
         });
 
         console.log('User registered successfully:', newStudent);
@@ -128,6 +138,21 @@ router.post('/signup', async (req, res) => {
     }
 });
 
+const verifyToken = (req, res, next) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+        return res.status(401).send('Access denied. No token provided.');
+    }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(400).send('Invalid token');
+    }
+};
 
  module.exports = {
     router,

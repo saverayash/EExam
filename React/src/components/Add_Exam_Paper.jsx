@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import { jwtDecode } from 'jwt-decode';
 function Add_Exam_Paper() {
   const [title, setTitle] = useState('');
   const [totalMarks, setTotalMarks] = useState('');
@@ -78,7 +78,16 @@ function Add_Exam_Paper() {
     };
 
     try {
-      const response = await axios.post('http://localhost:3000/add_exam_paper', examData);
+      const token = localStorage.getItem('jwtToken');
+      if(token)
+      {
+        const decoded = jwtDecode(token);
+        const Mail_Id = decoded.Mail_Id; 
+        const response = await axios.post('http://localhost:3000/add_exam_paper', {
+          examData: examData, 
+          Mail_Id: Mail_Id
+      });
+      
       console.log('Exam submitted successfully:', response.data);
       setTitle('');
       setTotalMarks('');
@@ -87,6 +96,9 @@ function Add_Exam_Paper() {
       setEndTime('');
       setDuration('');
       setQuestions([]);
+      }
+      else
+      console.error('Autherization required');
     } catch (error) {
       console.error('Error submitting exam:', error);
     }
@@ -427,10 +439,10 @@ function Add_Exam_Paper() {
       <button
         type="button"
         onClick={handleSubmit}
-        style={{ ...styles.button, ...styles.buttonDisabled }}
-        disabled={!questions.length}
+        style={styles.button}
+        disabled={!title || !questions.length}
       >
-        Submit Exam
+        Submit Exam Paper
       </button>
 
       {/* Display Added Questions */}
