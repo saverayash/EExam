@@ -1,64 +1,83 @@
 const express = require('express');
-const { Student, Instructor } = require('./login'); // Adjust the path as necessary
+const { Student, Instructor, Admin } = require('./login'); // Adjust the path as necessary
 const router = express.Router();
+const cors = require('cors');
+const app = express();
+app.use(cors());
+const nodemailer=require('nodemailer');
 
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com', 
+    port: 465, 
+    secure: true,
+    auth: {
+        user: 'ysexam100@gmail.com', 
+        pass: 'hczusdhemhwdtybl', 
+    },
+});
+
+// Function to send emails
+async function sendMail(to, sub, msg) {
+  try {
+      const info = await transporter.sendMail({
+          to: to,
+          subject: sub,
+          html: msg,
+      });
+      console.log('Email sent successfully:', info.response);
+  } catch (error) {
+      console.error('Error sending email:', error);
+      throw error; // Optional: throw to let the calling function know about the failure
+  }
+}
 router.post('/', async (req, res) => {
-    const { option, Id, Password, Mail_Id, Education } = req.body;
-    try {
-        if (option === 'student') {
-            // Check if student already exists
-            const user = await Student.findOne({
-                $or: [
-                  { Id: Id },
-                  { Mail_Id: Mail_Id }
-                ]
-            });
+  const { option, Id, Password, Mail_Id, Education ,My_Mail_Id} = req.body;
 
-            if (user) {
-                return res.status(400).send("Student with this Id or Mail already exists");
-            }
-        //     console.log(Mail_Id);
-            // Create new student
-            const newStudent = await Student.create({
-                Id: Id,
-                Password: Password,
-                Mail_Id: Mail_Id,
-                Education: Education
-            });
+  if (!option || !Id || !Password || !Mail_Id) {
+    return res.status(400).send('All required fields must be provided.');
+  }
 
-            return res.status(201).send("Student added successfully.");
-        
-        } else if (option === 'instructor') {
-            // Check if instructor already exists
-            const inst = await Instructor.findOne({
-                $or: [
-                  { Id: Id },
-                  { Mail_Id: Mail_Id }
-                ]
-            });
+  try {
+    let Model, newUserData;
 
-            if (inst) {
-                return res.status(400).send("Instructor with this Id or Mail already exists");
-            }
-
-            // Create new instructor
-            const newInstructor = await Instructor.create({
-                Id: Id,
-                Password: Password,
-                Mail_Id: Mail_Id,
-                Experience: null, // You can customize this as needed
-                Exam_Set: [] // Assuming it's an empty array by default
-            });
-
-            return res.status(201).send("Instructor added successfully.");
-        
-        } else {
-            return res.status(400).send("Invalid option selected.");
-        }
-    } catch (error) {
-        console.error('Error adding user:', error);
-        return res.status(500).send('An error occurred while adding the user.');
+    
+    if (option === 'student') {
+      Model = Student;
+      newUserData = { Id, Password, Mail_Id, Education };
+    } else if (option === 'instructor') {
+      Model = Instructor;
+      newUserData = { Id, Password, Mail_Id, Experience: null,Dounts:[], Exam_Set: [] };
+    } else if (option === 'admin') {
+      Model = Admin;
+      newUserData = { Id, Password, Mail_Id ,Experience: null,Exam_Set:[]};
+    } else {
+      return res.status(400).send('Invalid option selected.');
     }
+
+   
+    const existingUser = await Model.findOne({
+      $or: [{ Id }, { Mail_Id }],
+    });
+
+    if (existingUser) {
+      return res.status(400).send('User with this Id or Mail already exists');
+    }
+    const message = `
+    <p>Hiiii</p>
+    <p>New account is created from your Mail Id ${Mail_Id} by Our Admin Id ${My_Mail_Id}</p>
+    <p>Your role is ${Model.modelName}</p> <!-- Show model name -->
+    <p>Your Id is ${Id}</p>
+    <p>Your Password is ${Password}</p>
+    <p>If this activity seems suspicious, please report it to this email ID: ysexam100@gmail.com</p>
+  `;
+     await sendMail(Mail_Id,'New accout is creted  from your mail id',message)
+    await Model.create(newUserData);
+
+    return res.status(201).send(`${option.charAt(0).toUpperCase() + option.slice(1)} added successfully.`);
+  } catch (error) {
+    console.error('Error adding user:', error.message);
+    return res.status(500).send('An error occurred while adding the user.');
+  }
 });
 
 module.exports = router;

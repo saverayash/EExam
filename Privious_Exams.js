@@ -12,25 +12,26 @@ app.use(express.json());
 const { Answer_Sheet } = require('./Add_Exam_Paper');
 const {Student}=require('./login');
 const {Instructor}=require('./login');
+const {Admin}=require('./login');
 // Fetch all exams with active end time
 router.post('/', async (req, res) => {
     try {
         const currenttime = new Date();
-        const { mail_id } = req.body;  // Assuming student_id is passed in the request body
+        const { mail_id ,role} = req.body;  // Assuming student_id is passed in the request body
         
-      // Assuming you are inside an async function
-const student = await Student.findOne({ Mail_Id: mail_id });
-const student_id = student ? student._id : null;  // Handle if student is not found
-      if(student!=null)
-       {
-        const exams = await Answer_Sheet.find({
-           $or:[{ End_Time: { $lte: currenttime }},
-            {"Responses.Student_id": student_id}, ] 
-        });
-        res.json(exams);
-    }
-    else
+        if(role=='Student')
+        {
+            const student = await Student.findOne({ Mail_Id: mail_id });
+const student_id = student ? student._id : null; 
+const exams = await Answer_Sheet.find({
+    $or:[{ End_Time: { $lte: currenttime }},
+     {"Responses.Student_id": student_id}, ] 
+ });
+ res.json(exams);
+        }
+    else if(role=='Instructor')
     {
+          
           const inst=await Instructor.findOne({Mail_Id:mail_id});
           if(inst!=null)
           {
@@ -39,6 +40,19 @@ const student_id = student ? student._id : null;  // Handle if student is not fo
                     { End_Time: { $lte: currenttime } }, 
                     { _id: { $in: inst.Exam_Set } }     
                 ]
+            });
+            res.json(exams);
+          }
+          else
+          console.error('invalid autherization');
+    }
+    else
+    {
+        const adm=await Admin.findOne({Mail_Id:mail_id});
+          if(adm!=null)
+          {
+            const exams = await Answer_Sheet.find(
+                    { End_Time: { $lte: currenttime }
             });
             res.json(exams);
           }

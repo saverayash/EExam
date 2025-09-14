@@ -3,73 +3,81 @@ import java.util.*;
 
 public class Main {
     private static final FastIO sc = new FastIO();
-     
+    static StringBuffer str=new StringBuffer();
+    
+
     public static void main(String[] args) {
-        int t = sc.nextInt();
-
-      
+       int t=sc.nextInt();
+       
         while (t-- > 0) {
-            solve();
+           solve();
         }
+        System.out.println(str);
     }
-
+    
     static void solve() {
-      int n=sc.nextInt();
-      int m=sc.nextInt();
-      String s=sc.next();
-      int i=0,j=0;
-      long [][] a=new long [n][m];
-      long [] r=new long [n];
-      long [] c=new long [m];
-      for(i=0;i<n;i++)
-      {
-             for(j=0;j<m;j++)
-             {
-                long val=sc.nextLong();
-                a[i][j]=val;
-                r[i]+=val;
-                c[j]+=val;
-             }
-      }
-      i=0;j=0;
-      while(true)
-      {
-           if(i+j>=s.length())
-           break;
-           if(s.charAt(i+j)=='D')
-           {
-                 a[i][j]=-r[i];
-                 c[j]+=a[i][j];
-                 i++;
-           }
-           else
-           {
-                 a[i][j]=-c[j];
-                 r[i]+=a[i][j];
-                 j++;
-           }
-      }
-      a[n-1][m-1]=-r[n-1];
-      StringBuffer str=new StringBuffer();
-      for(i=0;i<n;i++)
-      {
-          for(j=0;j<m;j++)
-          str.append(a[i][j]+" ");
-          if(i!=n-1)
-          str.append('\n');
-      }
-      System.out.println(str);
+        long n = sc.nextLong();
+        long x = sc.nextLong();
+    
+        if (n == 1) {
+            if (x == 0) {
+                str.append("-1\n");
+            } else {
+                str.append(x + "\n");
+            }
+            return;
+        }
+    
+        if (n == 2) {
+            if (x == 0) {
+                str.append("-1\n");
+            } else {
+                str.append("0 " + x + "\n");
+            }
+            return;
+        }
+    
+        // For n >= 3, always possible
+        List<Long> res = new ArrayList<>();
+        long xor = 0;
+        for (int i = 1; i <= n - 3; i++) {
+            res.add(1L);
+            xor ^= 1;
+        }
+    
+        // Choose 2 large numbers to avoid collision with previous
+        long a = 1L << 17; // 131072
+        long b = 1L << 18; // 262144
+    
+        xor ^= a;
+        xor ^= b;
+    
+        long c = xor ^ x;
+    
+        // Ensure c is distinct from a and b and not 0
+        if (c == 0 || c == a || c == b || res.contains(c)) {
+            // Fix collision by increasing a, b
+            a = 1L << 19; // 524288
+            b = 1L << 20; // 1048576
+            xor = 1 ^ ((n - 3) % 2); // XOR of the 1s
+            xor ^= a;
+            xor ^= b;
+            c = xor ^ x;
+        }
+    
+        res.add(a);
+        res.add(b);
+        res.add(c);
+    
+        for (long val : res) {
+            str.append(val).append(" ");
+        }
+        str.append("\n");
     }
-   
-   static int gcd(int a,int b)
-   {
-           if(b>a)
-           return gcd(b,a);
+    
 
-           if(b==0)
-           return a;
-           return gcd(b,a%b);
-   }
+    
+
     static class Pair
     {
         int x;

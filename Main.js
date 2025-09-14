@@ -19,8 +19,22 @@ const Doubt_StudentRoutes=require('./Doubt_Student.js');
 const Doubt_InstructorRoutes=require('./Doubt_Instructor.js');
 const Answer_DoubtRoutes=require('./Answer_Doubt.js');
 const See_ResponseRoutes=require('./See_Response.js');
+const ForgotPasswordRoutes=require('./ForgotPassword.js');
+const ProfileRoutes=require('./Profile.js');
 const cors = require('cors');
+const mongoose = require('mongoose');
 
+
+main().catch(err => console.log(err));
+async function main() {
+    await mongoose.connect("mongodb+srv://yashsavera762:Jeemain9876@yashsv.fwwy2.mongodb.net/YSExam100");
+    // console.log('Database Connected');
+}
+
+
+// Middleware to parse incoming requests
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
 const app = express();
 
 // Allow all origins (use cautiously in production)
@@ -48,6 +62,8 @@ app.use('/doubt_student',Doubt_StudentRoutes);
 app.use('/doubt_instructor',Doubt_InstructorRoutes);
 app.use('/answer_doubt',Answer_DoubtRoutes);
 app.use('/see_response',See_ResponseRoutes);
+app.use('/forgotpassword',ForgotPasswordRoutes);
+app.use('/profile',ProfileRoutes);
 app.get('*', (req, res) => {
     res.status(404).send('Not Found');
 });
@@ -55,5 +71,5 @@ app.get('*', (req, res) => {
 // Start the server on a default port
 const PORT = process.env.PORT || 3000; // This uses the environment variable or falls back to 3000
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+   // console.log(`Server is running on port ${PORT}`);
 });

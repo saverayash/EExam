@@ -3,6 +3,7 @@ const router = express.Router();
 const { Answer_Sheet } = require('./Add_Exam_Paper'); 
 const {Instructor} =require('./login');
 const {Student}=require('./login');
+const {Admin}=require('./login');
 const app=express();
 const cors = require('cors');
 app.use(cors());
@@ -10,10 +11,11 @@ app.use(express.json());
 
 router.post('/all_exams', async (req, res) => {
     try {
-        
-        const { mail_id } = req.body;
-
-        // Fetch the instructor document by ID
+       
+        const { mail_id,role } = req.body;
+        // console.log(req.body);
+         if(role=="Instructor")
+         {
         const instructor = await Instructor.findOne({Mail_Id:mail_id});
 
         if (!instructor) {
@@ -28,22 +30,29 @@ router.post('/all_exams', async (req, res) => {
 
        
         const answerSheets = await Answer_Sheet.find({ _id: { $in: exams } });
-
+       
+         
       
         res.json({answerSheets:answerSheets });
+    }
+    else
+    {
+        const admin=await Admin.findOne({Mail_Id:mail_id});
+        if (!admin) {
+            return res.status(404).json({ error: "Admin not found" });
+        }
+        const answerSheets=await Answer_Sheet.find();
+        res.json({answerSheets});
+    }
     } catch (error) {
         console.error("Error fetching exams or answer sheets:", error);
         res.status(500).json({ error: "An error occurred while fetching data" });
     }
 });
-router.post('/:id', async (req, res) => {
+router.post('/check/:id', async (req, res) => {
     try {
-       
+      
         const { id } = req.params;
-
-          
-
-        
         const answerSheets = await Answer_Sheet.findOne({ _id: id });
         if (!answerSheets) {
             return res.status(404).json({ message: 'Answer sheets for this paper cannot be found' });
@@ -106,7 +115,7 @@ router.post('/:id', async (req, res) => {
                             } else if (negativeMarking) {
                                 marks = -(questionMarks * (negativePercentage / 100));
                             }
-                            //console.log(numericAnswer+" "+range[0]+" "+range[1]);
+                            console.log(numericAnswer+" "+range[0]+" "+range[1]);
                             break;
 
                         case 'choice':
@@ -118,7 +127,7 @@ router.post('/:id', async (req, res) => {
                                     marks = -(questionMarks * (negativePercentage / 100));
                                 }
                             } else {
-                                // Multi-choice question logic
+                                
                                 const correctSet = new Set(correctAnswer);
                                 const answeredSet = new Set(answer);
                                 if (
@@ -129,6 +138,7 @@ router.post('/:id', async (req, res) => {
                                 } else if (negativeMarking) {
                                     marks = -(questionMarks * (negativePercentage / 100));
                                 }
+                                
                             }
                             break;
 
@@ -137,16 +147,19 @@ router.post('/:id', async (req, res) => {
                     }
 
                     Marks.push(marks);
-                    Total_Marks += marks;
+                   
+                    Total_Marks += marks ?? 0; // Ensure marks are never null
+
                     if (index === answerSheets.Questions.length - 1) {
-                        response.Total_Score = Total_Marks;
+                        response.Total_Score = Total_Marks??0;
                     }
                 }
             );
 
-                // Store calculated marks in response
-                response.Marks = Marks;
-
+                
+                response.Marks = Marks??0;
+          
+                 
                 results.push({
                     Student_id,
                     Marks,
@@ -154,22 +167,17 @@ router.post('/:id', async (req, res) => {
                 });
             }
 
-            // Mark the answer sheet as checked
-            answerSheets.Checked = true;
+            
             await answerSheets.save();
 
-        const students = []; // Initialize an empty array
+        const students = [];
 
-// Assume `studentIds` is an array of _id values for the students whose data you want to fetch
-const answerSheet = await Answer_Sheet.findOne({ _id: id }); // Fetch the Answer_Sheet document
-const responses = answerSheet?.Responses || []; // Get the responses array
-
-// Iterate through the responses to populate the `students` array
+const responses = answerSheets?.Responses || []; // Get the responses array
 for (const response of responses) {
     const studentId = response.Student_id;
     const student = await Student.findOne({ _id: studentId }).lean(); // Fetch the student document
     if (student) {
-        const totalScore = response.Total_Score; // Assume `Score` is stored in the response
+        const totalScore = response.Total_Score??0; // Assume `Score` is stored in the response
         students.push({
             Student_Id: student._id, 
             Student_id: student.Id,
@@ -177,19 +185,113 @@ for (const response of responses) {
         });
     }
 }
-console.log(students);
+
 res.status(200).json({
     message: 'Answer sheets checked successfully',
     students,
+   
 });
     } catch (error) {
         console.error('Error checking answer sheets:', error);
         res.status(500).json({ message: 'Failed to check answer sheets', error: error.message });
     }
 });
+router.post('/:id', async (req, res) => { 
+    try {
+        const { id } = req.params;
+
+        const answerSheets = await Answer_Sheet.findOne({ _id: id });
+        if (!answerSheets) {
+            return res.status(404).json({ message: 'Answer sheets for this paper cannot be found' });
+        }
+
+        let results = []; 
+
+        if (answerSheets.Responses) {
+            for (const response of answerSheets.Responses) {
+                results.push({
+                    Student_id: response.Student_id,
+                    Marks: response.Marks,
+                    Total_Marks: response.Total_Score??0, 
+                });
+            }
+        }
+
+        await answerSheets.save();
+
+        let students = []; 
+        const updatedAnswerSheet = await Answer_Sheet.findOne({ _id: id }).lean(); 
+        const responses = updatedAnswerSheet?.Responses || []; 
+
+        for (const response of responses) {
+            const studentId = response.Student_id;
+            const student = await Student.findOne({ _id: studentId }).lean();
+            if (student) {
+                students.push({
+                    Student_Id: student._id,
+                    Student_id: student.Id, 
+                    Total_Score: response.Total_Score??0,
+                });
+            }
+        }
+        const status=updatedAnswerSheet.Checked;
+        console.log(students);
+        res.status(200).json({
+            message: 'Answer sheets checked successfully',
+            students,
+            status,
+        });
+    } catch (error) {
+        console.error('Error checking answer sheets:', error);
+        res.status(500).json({ message: 'Failed to check answer sheets', error: error.message });
+    }
+});
+
+router.post('/toggle/:id', async (req, res) => {
+    const { mail_id, role } = req.body;
+    let model;
+   const {id}=req.params;
+   console.log("yash second");
+    // Assign model based on role
+    if (role === 'Instructor') {
+        model = Instructor;
+    } else if (role === 'Admin') {
+        model = Admin;
+    } else {
+        return res.status(400).send("Invalid role provided");
+    }
+
+    try {
+        // Fetch the Instructor if role is Instructor
+        if (model === Instructor) {
+            const inst = await Instructor.findOne({ Mail_Id: mail_id });
+            if (!inst) {
+                return res.status(404).send("Instructor not found");
+            }
+            // Check if the instructor has the exam ID
+            if (!inst.Exam_Set.includes(id)) {
+                return res.status(400).send("Exam not set by you");
+            }
+        }
+
+       
+       const answerSheet = await Answer_Sheet.findById(id);
+               if (!answerSheet) {
+            return res.status(404).send("Answer sheet not found");
+        }
+        answerSheet.Checked = !answerSheet.Checked;
+        await answerSheet.save();
+
+        res.status(200).send({ message: "Answer sheet status toggled", checked: answerSheet.Checked });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("An error occurred while processing the request");
+    }
+});
 router.post('/:exam_id/:student_id', async (req, res) => {
     const { marks, Total_Score } = req.body;
     const { exam_id, student_id } = req.params;
+   
 
     try {
         // Find the answer sheet for the given exam and student
@@ -209,12 +311,13 @@ router.post('/:exam_id/:student_id', async (req, res) => {
         }
 
         const marksArray = Object.values(marks);
-
-        // Update marks and total score
+          
         studentResponse.Marks = marksArray;
-        studentResponse.Total_Score = Total_Score;
 
-        // Save the updated document
+        Tot_Sc=0;
+        marksArray.forEach((mk)=>{Tot_Sc+=mk ;console.log(mk)});
+        studentResponse.Total_Score = Tot_Sc;
+
         await answerSheet.save();
 
         res.status(200).json({ message: 'Marks updated successfully' });
@@ -223,4 +326,7 @@ router.post('/:exam_id/:student_id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error });
     }
 });
+
+
+
 module.exports = router;

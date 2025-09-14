@@ -4,10 +4,9 @@ const { Schema } = mongoose;
 const router1 = express.Router();
 
 const {Instructor} =require('./login');
-
+const {Admin}=require('./login');
 const Schema_Answer_Sheet = new Schema({
     Checked:Boolean,
-   // Paper_Id: String,
     Title: String,
     Total_Marks: Number,
     Instruction: String,
@@ -54,7 +53,8 @@ router1.post('/', async (req, res) => {
     try {
         
         
-        const { examData, Mail_Id } = req.body;
+        const { examData, Mail_Id,role } = req.body;
+        console.log(examData+" "+Mail_Id);
         const { title, totalMarks, instructions, startTime, endTime, duration, questions } = examData;
         //const {Mail_Id}=req.body.Mail_Id;
 
@@ -71,7 +71,11 @@ router1.post('/', async (req, res) => {
 
         // Save Paper to database
         const savedPaper = await newPaper.save();*/
-        const inst=await Instructor.findOne({Mail_Id:Mail_Id});
+        if(role=='Instructor')
+            model=Instructor;
+        else
+        model=Admin;
+        const inst=await model.findOne({Mail_Id:Mail_Id});
         // Create corresponding Answer_Sheet with Paper_Id referencing the savedPaper's _id
         const newAnswerSheet = new Answer_Sheet({
             Checked:false,
@@ -90,8 +94,8 @@ router1.post('/', async (req, res) => {
         
         await newAnswerSheet.save();
       
-       console.log(inst);
-        const updateExamSet = await Instructor.findOneAndUpdate(
+      // console.log(inst);
+        const updateExamSet = await model.findOneAndUpdate(
             { Mail_Id: Mail_Id }, 
             { 
                 $push: { 

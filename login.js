@@ -1,12 +1,46 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+
+const path = require('path');
 const { Schema } = mongoose;
-const jwt=require('jsonwebtoken');
+const crypto = require('crypto');
 
 const SECRET_KEY="I_AM_learning_JWT";
 
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com', 
+    port: 465, 
+    secure: true,
+    auth: {
+        user: 'ysexam100@gmail.com', 
+        pass: 'hczusdhemhwdtybl', 
+    },
+});
 
+// Function to send emails
+function sendMail(to, sub, msg) {
+    transporter.sendMail(
+        {
+            to: to,
+            subject: sub,
+            html: msg,
+        },
+        (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+            } else {
+                console.log('Email sent successfully:', info.response);
+            }
+        }
+    );
+}
+
+function generateRandomString() {
+    return crypto.randomBytes(4).toString('hex'); // Generates a string of 8 characters
+}
 const Schema_User = new Schema({
     Id: String,
     Password: String,
@@ -21,6 +55,7 @@ const Schema_Admin = new Schema({
     Password: String,
     Mail_Id: String,
     Experience: String,
+    Exam_Set:Array,
 });
 
 const Schema_Instructor = new Schema({
@@ -32,20 +67,16 @@ const Schema_Instructor = new Schema({
     Doubts:[],
 });
 
+const Schema_VerificationCode =new Schema({
+        Mail_Id:String,
+        Verification_Code:String,
+});
 const Student = mongoose.model('Student', Schema_User, 'User');
 const Admin = mongoose.model('Admin', Schema_Admin, 'Admin');
 const Instructor = mongoose.model('Instructor', Schema_Instructor, 'Instructor');
+const VerificationCode=mongoose.model('VerificationCode',Schema_VerificationCode,'VerificationCode');
 
-// Database connection
-main().catch(err => console.log(err));
-async function main() {
-    await mongoose.connect("mongodb://localhost:27017/yashsavera762");
-    console.log('Database Connected');
-}
 
-// Middleware to parse incoming requests
-router.use(express.json());
-router.use(express.urlencoded({ extended: true }));
 
 
 
@@ -73,7 +104,7 @@ router.post('/login', async (req, res) => {
             return res.json({ token, role: 'Admin',Id:id }); 
         }
 
-        // Check if user is an instructor
+       
         const instructor = await Instructor.findOne({ Id: id, Password: password });
         if (instructor) {
             console.log("Instructor login");
@@ -81,7 +112,7 @@ router.post('/login', async (req, res) => {
             return res.json({ token, role: 'Instructor' ,Id:id}); 
         }
 
-        // If no user found
+        console.log(instructor);
         return res.status(401).json({ message: 'Incorrect ID or Password' });
     } catch (error) {
         console.error('Error during login:', error);
@@ -91,51 +122,123 @@ router.post('/login', async (req, res) => {
 
 
 
-// POST signup route
-router.post('/signup', async (req, res) => {
-    const { id, password, mail_id, education} = req.body;
 
-    // Validation logic here
+router.post('/signup', async (req, res) => {
+    const { id, password, mail_id, education } = req.body;
+
+    // Validate input
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(mail_id)) {
-        return res.status(400).send("Invalid email format");
-    }
+    if (!emailRegex.test(mail_id)) return res.status(400).send("Invalid email format");
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    if (!passwordRegex.test(password)) {
-        return res.send("Password should be at least 8 characters long, contain at least one lowercase letter, one uppercase letter, one number, and one special character");
-    }
+    if (!passwordRegex.test(password)) return res.status(400).send("Password must meet the required complexity");
 
     try {
-        // Check if the email is already registered
-        const exist1 = await Admin.findOne({ Mail_Id: mail_id });
-        const exist2 = await Student.findOne({ Mail_Id: mail_id });
-        const exist3 = await Instructor.findOne({ Mail_Id: mail_id });
-        const exist4=await Admin.findOne({Id:id});
-        const exist5=await Student.findOne({Id:id});
-        const exist6=await Instructor.findOne({Id:id});
-        if (exist1 || exist2 || exist3) {
-            return res.status(409).send("Email is already in use");
-        }
-        if (exist4 || exist5 || exist6) {
-            return res.status(409).send("Username is already in use");
-        }
-        // Create a new student
-        const newStudent = await Student.create({
+        // Check if email or ID already exists
+        const exist1 = await Student.findOne({ Mail_Id: mail_id });
+        const exist2 = await Student.findOne({ Id: id });
+        const exist3=await Instructor.findOne({Mail_Id:mail_id});
+        const exist4=await Instructor.findOne({Id:id});
+        const exist5=await Admin.findOne({Mail_Id:mail_id});
+        const exist6=await Admin.findOne({Id:id});
+        if (exist1 || exist2||exist3||exist4||exist5||exist6) return res.status(409).send("Email or Username is already in use");
+
+        // Create new student
+        // await Student.create({
+        //     Id: id,
+        //     Password: password,
+        //     Mail_Id: mail_id,
+        //     Education: education,
+        //     Exams_Given: [],
+        //     Doubts: [],
+        // });
+
+          const code=generateRandomString();
+          const message = `
+        <p>Your Verification Code is <b>${code}</b>.</p>
+        <p>If this wasn't you, please report it to this email ID: ysexam100@gmail.com</p>
+    `;
+
+    await VerificationCode.updateOne(
+        { Mail_Id: mail_id },
+        { $set: { Verification_Code: code } },
+        { upsert: true }
+    );
+
+    // ✅ Ensure sendMail() is correctly defined and awaited if needed
+   
+       
+         sendMail(mail_id,'Verification of Email Id for YSExam',message);
+        res.status(200).send("Signup successful and email sent");
+    } catch (error) {
+        console.error('Error during signup:', error);
+        res.status(500).send("An error occurred during signup");
+    }
+});
+
+
+router.post('/verify-code', async (req, res) => {
+    const {id, password, mail_id, education , code } = req.body;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(mail_id)) return res.status(400).send("Invalid email format");
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) return res.status(400).send("Password must meet the required complexity");
+
+try {
+       
+        const exist1 = await Student.findOne({ Mail_Id: mail_id });
+        const exist2 = await Student.findOne({ Id: id });
+        const exist3=await Instructor.findOne({Mail_Id:mail_id});
+        const exist4=await Instructor.findOne({Id:id});
+        const exist5=await Admin.findOne({Mail_Id:mail_id});
+        const exist6=await Admin.findOne({Id:id});
+        if (exist1 || exist2||exist3||exist4||exist5||exist6) return res.status(409).send("Email or Username is already in use");
+
+        
+       
+
+         
+    const check = await VerificationCode.findOne({ Mail_Id: mail_id });
+
+    if (!check) return res.status(400).send("Verification code not found. Please sign up again.");
+
+    if (check.Verification_Code === code) {
+        await Student.create({
             Id: id,
             Password: password,
             Mail_Id: mail_id,
             Education: education,
-            Exams_Given:[],
-            Doubts:[],
+            Exams_Given: [],
+            Doubts: [],
         });
-
-        console.log('User registered successfully:', newStudent);
-        return res.status(201).send("User registered successfully");
+        res.status(200).send("Signup successful");
+    } else {
+        res.status(400).send("Incorrect verification code");
+    }
     } catch (error) {
         console.error('Error during signup:', error);
-        return res.status(500).send('An error occurred while processing your request.');
+        res.status(500).send("An error occurred during signup");
     }
+});
+router.post('/send-verification', async (req,res) => {
+          const {mail_id}=req.body;
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(mail_id)) return res.status(400).send("Invalid email format");
+    const code=generateRandomString();
+    const message = `
+  <p>Your Verification Code is <b>${code}</b>.</p>
+  <p>If this wasn't you, please report it to this email ID: ysexam100@gmail.com</p>`;
+
+await VerificationCode.updateOne(
+  { Mail_Id: mail_id },
+  { $set: { Verification_Code: code } },
+  { upsert: true }
+);
+
+   sendMail(mail_id,'Verification of Email Id for YSExam',message);
+  res.status(200).send("Verification Sent Successfully");
 });
 
 const verifyToken = (req, res, next) => {
@@ -158,4 +261,6 @@ const verifyToken = (req, res, next) => {
     router,
     Student,
     Instructor,
+    Admin,
+    VerificationCode,
 }

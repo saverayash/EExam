@@ -1,29 +1,31 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Index from './components/Index';
-import User from './components/User'; 
-import Admin from './components/Admin';
-import Instructor from './components/Instructor';
-import Change_Password from './components/Change_Password';
-import Privious_Exams from './components/Privious_Exams';
-import Ask_Doubt from './components/Ask_Doubt';
-import Exams from './components/Exams';
-import Add_Another from  './components/Add_Another';
-import Add_Exam_Paper from './components/Add_Exam_Paper';
-import Check_Exam_Paper from './components/Check_Exam_Paper';
-import Give_Exam from './components/Give_Exam';
-import Sidebar_User from './components/Sidebar_User.jsx';
-import MyExam from './components/MyExam.jsx';
-import Given_Exam from './components/Given_Exam.jsx';
-import Sidebar_Instructor  from './components/Sidebar_Instructor.jsx';
-import Doubt_Student from './components/Doubt_Student.jsx';
-import Doubt_Instructor from './components/Doubt_Instructor.jsx';
-import See_Exam from './components/See_Exam.jsx';
-import Privious_Exams_Instructor from './components/Privious_Exams_Instructor.jsx';
-import See_Response from './components/See_Response.jsx';
-import View_Student_Response from './components/View_Student_Response.jsx';
-import Check_Student_Response from './components/Check_Student_Response.jsx';
-import Check_Student_Response_Manually from './components/Check_Student_Response_Manually.jsx';
+import Index from './React_JS/Index';
+import User from './React_JS/User'; 
+import Admin from './React_JS/Admin';
+import Instructor from './React_JS/Instructor';
+import Change_Password from './React_JS/Change_Password';
+import Privious_Exams from './React_JS/Privious_Exams';
+import Ask_Doubt from './React_JS/Ask_Doubt';
+import Exams from './React_JS/Exams';
+import Add_Another from  './React_JS/Add_Another';
+import Add_Exam_Paper from './React_JS/Add_Exam_Paper';
+import Check_Exam_Paper from './React_JS/Check_Exam_Paper';
+import Give_Exam from './React_JS/Give_Exam';
+import Sidebar_User from './React_JS/Sidebar_User.jsx';
+import MyExam from './React_JS/MyExam.jsx';
+import Given_Exam from './React_JS/Given_Exam.jsx';
+import Sidebar_Instructor  from './React_JS/Sidebar_Instructor.jsx';
+import Doubt_Student from './React_JS/Doubt_Student.jsx';
+import Doubt_Instructor from './React_JS/Doubt_Instructor.jsx';
+import See_Exam from './React_JS/See_Exam.jsx';
+import Privious_Exams_Instructor from './React_JS/Privious_Exams_Instructor.jsx';
+import See_Response from './React_JS/See_Response.jsx';
+import View_Student_Response from './React_JS/View_Student_Response.jsx';
+import Check_Student_Response from './React_JS/Check_Student_Response.jsx';
+import Check_Student_Response_Manually from './React_JS/Check_Student_Response_Manually.jsx';
+import About_Us from './React_JS/About_Us.jsx';
+import Profile from './React_JS/Profile.jsx';
 function App() {
     return (
         <Router>
@@ -52,6 +54,8 @@ function App() {
                 <Route path='/view_student_response/:student_id/:exam_id' element={<View_Student_Response/>}/>
                 <Route path='/check_student_response/:id' element={<Check_Student_Response/>}/>
                 <Route path='/check_student_response_manually/:student_id/:exam_id' element={<Check_Student_Response_Manually/>}/>
+                <Route path='/about_us' element={<About_Us/>}/>
+                <Route path='/profile' element={<Profile/>}/>
             </Routes>
         </Router>
     );
